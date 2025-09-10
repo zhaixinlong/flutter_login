@@ -13,11 +13,15 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool isPasswordLogin = true;
+  bool isRegister = false;
+
   final TextEditingController _accountController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _verifyController = TextEditingController();
 
-  int _countdown = 0; // 倒计时秒数
+  int _countdown = 0; // 验证码倒计时
   Timer? _timer;
+  String _smsCode = ""; // 模拟发送验证码
 
   @override
   void dispose() {
@@ -26,17 +30,61 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _startCountdown() {
-    setState(() => _countdown = 60);
+    if (_accountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("请输入手机号")),
+      );
+      return;
+    }
+    setState(() {
+      _countdown = 60;
+      _smsCode = "123456"; // 模拟固定验证码
+    });
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_countdown <= 1) {
         timer.cancel();
       }
       setState(() => _countdown--);
     });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("验证码已发送：123456（模拟）")),
+    );
   }
 
   Future<void> _login() async {
+    final account = _accountController.text.trim();
+    final pwd = _passwordController.text.trim();
+    final code = _verifyController.text.trim();
+
+    if (account.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("请输入账号/手机号")),
+      );
+      return;
+    }
+
+    if (isPasswordLogin) {
+      if (pwd.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("请输入密码")),
+        );
+        return;
+      }
+    } else {
+      if (code != _smsCode) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("验证码错误")),
+        );
+        return;
+      }
+    }
+
+    // 模拟注册/登录
     await Storage.set("isLoggedIn", true);
+    await Storage.setUser({
+      "username": isRegister ? "用户$account" : "测试用户",
+      "phone": account,
+    });
 
     Navigator.pushReplacement(
       context,
@@ -105,6 +153,7 @@ class _LoginPageState extends State<LoginPage> {
                       children: [
                         Expanded(
                           child: TextField(
+                            controller: _verifyController,
                             decoration: const InputDecoration(
                               labelText: "验证码",
                               border: OutlineInputBorder(),
@@ -136,16 +185,27 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text("登录"),
+                    child: Text(isRegister ? "注册" : "登录"),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ResetPage()),
-                      );
-                    },
-                    child: const Text("忘记密码？"),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() => isRegister = !isRegister);
+                        },
+                        child: Text(isRegister ? "已有账号？去登录" : "没有账号？去注册"),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ResetPage()),
+                          );
+                        },
+                        child: const Text("忘记密码？"),
+                      ),
+                    ],
                   ),
                 ],
               ),
