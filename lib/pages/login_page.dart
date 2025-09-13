@@ -86,9 +86,16 @@ class _LoginPageState extends State<LoginPage> {
       "phone": account,
     });
 
-    Navigator.pushReplacement(
+    // Navigator.pushReplacement(
+    //   context,
+    //   MaterialPageRoute(builder: (_) => const MainPage()),
+    // );
+
+    // 如果你的项目后面可能有多层页面，最好用这个，把登录页之前的路由都清掉： 
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const HomePage()),
+      (route) => false, // 移除所有之前的路由
     );
   }
 
